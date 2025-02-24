@@ -38,7 +38,7 @@ jobs:
     - name: 📂 Verify Build Output
       run: |
         echo "Checking build directory..."
-        ls -al ./build
+         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
 
     - name: 🚀 Deploy to S3
       run: |
