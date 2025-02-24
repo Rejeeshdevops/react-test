@@ -3,56 +3,25 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - master  # Change branch if needed
+      - master
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 🚀 Checkout Code
-      uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-    - name: 🔧 Use Node.js LTS
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'  # LTS version recommended
-        cache: 'pnpm'
+        node-version: 18
 
-    - name: 📦 Install PNPM
+    - name: Install pnpm
       run: npm install -g pnpm
 
-    - name: ⚡ Restore PNPM Cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
+    - name: Install dependencies
+      run: pnpm install
 
-    - name: 📦 Install Dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: 🔄 Detect Changed Files
-      id: changed-files
-      uses: tj-actions/changed-files@v44  # Gets list of modified files
-
-    - name: 🎯 Build Only If Needed
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: pnpm build
-
-    - name: 🚀 Deploy Only If Build Exists
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: |
-        aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-
-    - name: 🔄 Invalidate CloudFront Cache
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: |
-        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+    # Add other steps here
