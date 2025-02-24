@@ -13,35 +13,49 @@ jobs:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
 
-    - name: 🔧 Use Node.js LTS
+    - name: 🔧 Use Node.js LTS with Corepack (Better PNPM Management)
       uses: actions/setup-node@v4
       with:
         node-version: '18'  # LTS version recommended
+        cache: 'pnpm'
 
-    - name: 📦 Install PNPM
-      run: npm install -g pnpm
+    - name: 🔧 Enable Corepack & Activate PNPM
+      run: |
+        corepack enable
+        corepack prepare pnpm@latest --activate
+
+    - name: 🛠 Debug PNPM Installation
+      run: |
+        echo "Node.js Version: $(node -v)"
+        echo "Corepack Version: $(corepack --version || echo 'Corepack not found')"
+        echo "Checking PNPM Path: $(which pnpm || echo 'PNPM not found in PATH')"
+        echo "PNPM Version: $(pnpm --version || echo 'PNPM installation failed')"
 
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
       with:
-        path: ~/.pnpm-store
+        path: |
+          ~/.pnpm-store
+          .pnpm-store
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-
 
-    - name: 📦 Install Dependencies
+    - name: 📦 Install Dependencies (Skip if Cache Hit)
       run: pnpm install --frozen-lockfile
 
-    - name: 🔄 Detect Changed Files
+    - name: 🔄 Detect Changed Files (More Reliable)
       id: changed-files
-      uses: tj-actions/changed-files@v44  # Gets list of modified files
+      uses: tj-actions/changed-files@v44
+      with:
+        json: true
 
-    - name: 🎯 Build Only If Needed
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
+    - name: 🎯 Build Only If Needed (More Accurate)
+      if: steps.changed-files.outputs.any_changed == 'true'
       run: pnpm build
 
     - name: 🚀 Deploy Only If Build Exists
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
+      if: steps.changed-files.outputs.any_changed == 'true'
       run: |
         aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
       env:
@@ -49,7 +63,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
     - name: 🔄 Invalidate CloudFront Cache
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
+      if: steps.changed-files.outputs.any_changed == 'true'
       run: |
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
       env:
