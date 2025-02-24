@@ -1,4 +1,4 @@
-name: Deploy React App to S3
+name: Deploy React App to S3 🚀
 
 on:
   push:
@@ -13,60 +13,36 @@ jobs:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
 
-    - name: 🔧 Use Node.js LTS
+    - name: 🔧 Set Up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'  # LTS version recommended
+        node-version: '18'  # Use LTS version
+        cache: 'pnpm'
 
     - name: 📦 Install PNPM
       run: npm install -g pnpm
 
-    - name: ⚡ Restore PNPM Cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
-
-    - name: 📦 Install Dependencies
+    - name: ⚡ Install Dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: 🔄 Detect Changed Files
-      id: changed-files
-      uses: tj-actions/changed-files@v44  # Gets list of modified files
+    - name: 🎯 Build React App
+      run: pnpm run build
 
-    - name: 📂 List Changed Files
-      run: echo "Changed files: "${{ steps.changed-files.outputs.all_changed_files }}"
-
-    - name: 🎯 Build Only If Needed
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: pnpm build
-
-    - name: 📂 List Build Directory
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
+    - name: 📂 Verify Build Output
       run: |
-        echo "Listing build directory contents:"
+        echo "Checking build directory..."
         ls -al ./build
 
     - name: 🚀 Deploy to S3
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
-        if [ -d "./build" ]; then
-          echo "Deploying to S3..."
-          aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
-        else
-          echo "Build directory does not exist, skipping deployment."
-        fi
+        aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: 🔄 Invalidate CloudFront Cache
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
-        echo "Invalidating CloudFront Cache..."
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
