@@ -3,10 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - master  # Run on any push to master
-  pull_request:
-    branches:
-      - master  # Run on PRs too
+      - master  # Change branch if needed
 
 jobs:
   build-deploy:
@@ -16,7 +13,13 @@ jobs:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
 
-    - name: ⚡ Restore pnpm Cache
+    - name: 🔧 Use Node.js LTS
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'  # LTS version recommended
+        cache: 'pnpm'
+
+    - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
       with:
         path: ~/.pnpm-store
@@ -25,9 +28,7 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: 📦 Install Dependencies
-      run: |
-        corepack enable
-        pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
 
     - name: 🔄 Detect Changed Files
       id: changed-files
@@ -37,18 +38,16 @@ jobs:
       if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: pnpm build
 
-    - name: 🔍 Verify Build Output
-      run: ls -lh ./build
-
-    - name: 🛠 Deploy to S3
+    - name: 🚀 Deploy Only If Build Exists
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
         aws s3 sync ./build s3://your-bucket-name --exact-timestamps --delete
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-        AWS_REGION: "us-east-1"  # Change as needed
 
-    - name: 🏎️ Invalidate CloudFront Cache
+    - name: 🔄 Invalidate CloudFront Cache
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
         aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
       env:
