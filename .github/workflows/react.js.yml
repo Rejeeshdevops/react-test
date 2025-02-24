@@ -3,7 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - master  # Change as needed
+      - master  # Change branch if needed
 
 jobs:
   build-deploy:
@@ -16,26 +16,24 @@ jobs:
     - name: 🔧 Use Node.js LTS
       uses: actions/setup-node@v4
       with:
-        node-version: '18'  # Use latest LTS version
+        node-version: '18'  # LTS version recommended
         cache: 'pnpm'
 
-    - name: 🔧 Enable Corepack & Install PNPM
+    - name: 🔧 Enable Corepack & Activate PNPM
       run: |
         corepack enable
         corepack prepare pnpm@latest --activate
-        echo "Checking if PNPM is installed..."
-        pnpm --version || echo "PNPM installation failed!"
 
-    - name: 🛠 Debug PNPM Installation (if needed)
+    - name: 🛠 Debug PNPM Installation
       run: |
-        echo "Node.js Version:"
-        node -v
-        echo "Checking Corepack Version:"
-        corepack --version || echo "Corepack not found"
-        echo "Checking PNPM Installation Path:"
-        which pnpm || echo "PNPM not found in PATH"
-        echo "Checking PNPM Version:"
-        pnpm --version || echo "PNPM not installed"
+        echo "Node.js Version: $(node -v)"
+        echo "Corepack Version: $(corepack --version || echo 'Corepack not found')"
+        echo "Checking PNPM Path: $(which pnpm || echo 'PNPM not found in PATH')"
+        echo "PNPM Version: $(pnpm --version || echo 'PNPM installation failed')"
+
+    - name: 📦 Fallback: Install PNPM Manually (if needed)
+      run: npm install -g pnpm
+      if: failure()
 
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
