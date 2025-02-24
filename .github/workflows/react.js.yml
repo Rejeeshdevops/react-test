@@ -3,7 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - master  # Change branch if needed
+      - master  # Change as needed
 
 jobs:
   build-deploy:
@@ -16,14 +16,14 @@ jobs:
     - name: 🔧 Use Node.js LTS
       uses: actions/setup-node@v4
       with:
-        node-version: '18'  # LTS version recommended
+        node-version: '18'  # Use latest LTS version
         cache: 'pnpm'
 
     - name: 🔧 Enable Corepack & Install PNPM
       run: |
         corepack enable
         corepack prepare pnpm@latest --activate
-        pnpm --version  # Check if pnpm is installed
+        pnpm --version  # Verify installation
 
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
