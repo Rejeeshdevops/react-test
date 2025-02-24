@@ -1,9 +1,9 @@
-name: Deploy React App to S3 🚀
+name: Deploy React App to S3
 
 on:
   push:
     branches:
-      - master  # Change this if needed
+      - master  # Change branch if needed
 
 jobs:
   build-deploy:
@@ -13,14 +13,21 @@ jobs:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set Up Node.js LTS
+    - name: 🔧 Use Node.js LTS
       uses: actions/setup-node@v4
       with:
-        node-version: '18'  # Use LTS version
-        cache: 'pnpm'
+        node-version: '18'  # LTS version recommended
 
     - name: 📦 Install PNPM
       run: npm install -g pnpm
+
+    - name: ⚡ Restore PNPM Cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
 
     - name: ⚡ Install Dependencies
       run: pnpm install --frozen-lockfile
