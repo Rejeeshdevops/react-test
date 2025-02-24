@@ -1,3 +1,13 @@
+name: Deploy React App to S3
+
+on:
+  push:
+    branches:
+      - master  # Run on any push to master
+  pull_request:
+    branches:
+      - master  # Run on PRs too
+
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
@@ -5,15 +15,6 @@ jobs:
     steps:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
-
-    - name: 🔧 Use Node.js LTS
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'pnpm'
-
-    - name: 🔄 Reset Corepack Metadata
-      run: rm -rf ~/.cache/corepack
 
     - name: ⚡ Restore pnpm Cache
       uses: actions/cache@v4
@@ -24,8 +25,9 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: 📦 Install Dependencies
-      run: pnpm install --frozen-lockfile
-
+      run: |
+        corepack enable
+        pnpm install --frozen-lockfile
 
     - name: 🔄 Detect Changed Files
       id: changed-files
