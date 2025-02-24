@@ -50,7 +50,7 @@ jobs:
         ls -al ./build
 
     - name: 🚀 Deploy Only If Build Exists
-      if: always() && [ -d "./build" ]
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/') && (steps.changed-files.outputs.all_changed_files != '')
       run: |
         aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
       env:
@@ -59,7 +59,7 @@ jobs:
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: 🔄 Invalidate CloudFront Cache
-      if: always() && [ -d "./build" ]
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/') && (steps.changed-files.outputs.all_changed_files != '')
       run: |
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
       env:
