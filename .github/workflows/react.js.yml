@@ -32,8 +32,8 @@ jobs:
         echo "PNPM Version: $(pnpm --version || echo 'PNPM installation failed')"
 
     - name: 📦 Fallback: Install PNPM Manually (if needed)
-      run: npm install -g pnpm
       if: failure()
+      run: npm install -g pnpm
 
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
@@ -51,21 +51,4 @@ jobs:
       uses: tj-actions/changed-files@v44  # Gets list of modified files
 
     - name: 🎯 Build Only If Needed
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: pnpm build
-
-    - name: 🚀 Deploy Only If Build Exists
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: |
-        aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-
-    - name: 🔄 Invalidate CloudFront Cache
-      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
-      run: |
-        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      if: ste
