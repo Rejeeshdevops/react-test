@@ -42,7 +42,7 @@ jobs:
 
     - name: 🚀 Deploy to S3
       run: |
-        aws s3 sync ./dist s3://react-js-testfeb23 --delete
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
