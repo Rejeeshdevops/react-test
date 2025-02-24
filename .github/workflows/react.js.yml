@@ -37,7 +37,7 @@ jobs:
       uses: tj-actions/changed-files@v44  # Gets list of modified files
 
     - name: 📂 List Changed Files
-      run: echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+      run: echo "Changed files: "${{ steps.changed-files.outputs.all_changed_files }}"
 
     - name: 🎯 Build Only If Needed
       if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
