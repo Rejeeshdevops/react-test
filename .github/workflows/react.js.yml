@@ -40,18 +40,20 @@ jobs:
         echo "Checking build directory..."
         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
 
+    - name: ✅ Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
     - name: 🚀 Deploy to S3
       run: |
         if [ -z "${{ secrets.S3_BUCKET }}" ]; then
           echo "Error: S3_BUCKET secret is not set."
           exit 1
         fi
-        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Ensure this is correct
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
 
     - name: 🔄 Invalidate CloudFront Cache
       run: |
@@ -60,6 +62,3 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
