@@ -23,7 +23,19 @@ jobs:
       run: |
         corepack enable
         corepack prepare pnpm@latest --activate
-        pnpm --version  # Verify installation
+        echo "Checking if PNPM is installed..."
+        pnpm --version || echo "PNPM installation failed!"
+
+    - name: 🛠 Debug PNPM Installation (if needed)
+      run: |
+        echo "Node.js Version:"
+        node -v
+        echo "Checking Corepack Version:"
+        corepack --version || echo "Corepack not found"
+        echo "Checking PNPM Installation Path:"
+        which pnpm || echo "PNPM not found in PATH"
+        echo "Checking PNPM Version:"
+        pnpm --version || echo "PNPM not installed"
 
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
