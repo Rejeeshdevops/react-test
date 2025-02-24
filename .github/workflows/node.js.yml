@@ -1,0 +1,56 @@
+name: Deploy React App to S3
+
+on:
+  push:
+    branches:
+      - master  # Run on any push to master
+  pull_request:
+    branches:
+      - master  # Run on PRs too
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 🚀 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: ⚡ Restore pnpm Cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: 📦 Install Dependencies
+      run: |
+        corepack enable
+        pnpm install --frozen-lockfile
+
+    - name: 🔄 Detect Changed Files
+      id: changed-files
+      uses: tj-actions/changed-files@v44  # Gets list of modified files
+
+    - name: 🎯 Build Only If Needed
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
+      run: pnpm build
+
+    - name: 🔍 Verify Build Output
+      run: ls -lh ./build
+
+    - name: 🛠 Deploy to S3
+      run: |
+        aws s3 sync ./build s3://your-bucket-name --exact-timestamps --delete
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+        AWS_REGION: "us-east-1"  # Change as needed
+
+    - name: 🏎️ Invalidate CloudFront Cache
+      run: |
+        aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
