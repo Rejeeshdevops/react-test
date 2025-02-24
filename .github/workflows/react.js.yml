@@ -40,37 +40,31 @@ jobs:
       run: echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
 
     - name: 🎯 Build Only If Needed
-      if: > 
-        steps.changed-files.outputs.all_changed_files != '' && 
-        contains(steps.changed-files.outputs.all_changed_files, 'src/')
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: pnpm build
 
     - name: 📂 List Build Directory
-      if: > 
-        steps.changed-files.outputs.all_changed_files != '' && 
-        contains(steps.changed-files.outputs.all_changed_files, 'src/')
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
         echo "Listing build directory contents:"
         ls -al ./build
 
     - name: 🚀 Deploy to S3
-      if: > 
-        steps.changed-files.outputs.all_changed_files != '' && 
-        contains(steps.changed-files.outputs.all_changed_files, 'src/') && 
-        hashFiles('build/**') != ''
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
-        echo "Deploying to S3..."
-        aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
+        if [ -d "./build" ]; then
+          echo "Deploying to S3..."
+          aws s3 sync ./build s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
+        else
+          echo "Build directory does not exist, skipping deployment."
+        fi
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: 🔄 Invalidate CloudFront Cache
-      if: > 
-        steps.changed-files.outputs.all_changed_files != '' && 
-        contains(steps.changed-files.outputs.all_changed_files, 'src/') && 
-        hashFiles('build/**') != ''
+      if: contains(steps.changed-files.outputs.all_changed_files, 'src/')
       run: |
         echo "Invalidating CloudFront Cache..."
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
