@@ -58,13 +58,19 @@ jobs:
         echo "[default]" > ~/.aws/config
         echo "region = us-east-1" >> ~/.aws/config
 
+    - name: Debug AWS Credentials
+      run: cat ~/.aws/credentials
+
+    - name: Debug AWS Config
+      run: cat ~/.aws/config
+
     - name: 🚀 Deploy to S3
       run: |
         if [ -z "${{ secrets.S3_BUCKET }}" ]; then
           echo "Error: S3_BUCKET secret is not set."
           exit 1
         fi
-        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }} --debug
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
