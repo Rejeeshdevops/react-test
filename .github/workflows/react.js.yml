@@ -1,26 +1,23 @@
 name: Deploy React App to S3
-
 on:
   push:
     branches:
       - master  # Change branch if needed
-
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-
     steps:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
-
+      
     - name: 🔧 Use Node.js LTS
       uses: actions/setup-node@v4
       with:
         node-version: '18'  # LTS version recommended
-
+        
     - name: 📦 Install PNPM
       run: npm install -g pnpm
-
+      
     - name: ⚡ Restore PNPM Cache
       uses: actions/cache@v4
       with:
@@ -28,55 +25,33 @@ jobs:
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-
-
+          
     - name: 📦 Install Dependencies
       run: pnpm install --frozen-lockfile
-
+      
     - name: 🎯 Build React App
       run: pnpm run build
-
+      
     - name: 📂 Verify Build Output
       run: |
         echo "Checking build directory..."
         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
-
-    - name: Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --update
-
+        
     - name: Configure AWS Credentials
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        mkdir -p ~/.aws
-        echo "[default]" > ~/.aws/credentials
-        echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-        echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-        echo "[default]" > ~/.aws/config
-        echo "region = us-east-1" >> ~/.aws/config
-
-    - name: Debug AWS Credentials
-      run: cat ~/.aws/credentials
-
-    - name: Debug AWS Config
-      run: cat ~/.aws/config
-
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        
     - name: 🚀 Deploy to S3
       run: |
         if [ -z "${{ secrets.S3_BUCKET }}" ]; then
           echo "Error: S3_BUCKET secret is not set."
           exit 1
         fi
-        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }} --debug
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete
+      
     - name: 🔄 Invalidate CloudFront Cache
       run: |
         if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
@@ -84,21 +59,9 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-    # Debug Step to Print Environment Variables
-    - name: 🐛 Debug Environment Variables
+      
+    - name: 🐛 Debug Environment Variables (Non-sensitive)
       run: |
-        echo "AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID"
-        echo "AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY"
-        echo "AWS_REGION: $AWS_REGION"
-        echo "S3_BUCKET: $S3_BUCKET"
-        echo "CLOUDFRONT_DISTRIBUTION_ID: $CLOUDFRONT_DISTRIBUTION_ID"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-        CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
+        echo "S3_BUCKET: ${{ secrets.S3_BUCKET }}"
+        echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
