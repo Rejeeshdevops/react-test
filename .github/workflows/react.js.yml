@@ -40,19 +40,37 @@ jobs:
         echo "Checking build directory..."
         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
 
-#    - name: 🚀 Deploy to S3
-#      run: |
-#        if [ -z "${{ secrets.S3_BUCKET }}" ]; then
-#          echo "Error: S3_BUCKET secret is not set."
-#          exit 1
-#        fi
-#       aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
-#      env:
-#        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#        AWS_REGION: ${{ secrets.AWS_REGION }}
-#        S3_BUCKET: ${{ secrets.S3_BUCKET }}
-#
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install --update
+
+    - name: Configure AWS Credentials
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        mkdir -p ~/.aws
+        echo "[default]" > ~/.aws/credentials
+        echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+        echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+        echo "[default]" > ~/.aws/config
+        echo "region = us-east-1" >> ~/.aws/config
+
+    - name: 🚀 Deploy to S3
+      run: |
+        if [ -z "${{ secrets.S3_BUCKET }}" ]; then
+          echo "Error: S3_BUCKET secret is not set."
+          exit 1
+        fi
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET: ${{ secrets.S3_BUCKET }}
+
     - name: 🔄 Invalidate CloudFront Cache
       run: |
         if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
