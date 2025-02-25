@@ -39,20 +39,19 @@ jobs:
       run: |
         echo "Checking build directory..."
         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
-  
+
     - name: 🚀 Deploy to S3
       run: |
         if [ -z "${{ secrets.S3_BUCKET }}" ]; then
-        echo "Error: S3_BUCKET secret is not set."
-        exit 1
-      fi
-          aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
+          echo "Error: S3_BUCKET secret is not set."
+          exit 1
+        fi
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --region ${{ secrets.AWS_REGION }}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: 'us-east-1'
-        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-  
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET: ${{ secrets.S3_BUCKET }}
 
     - name: 🔄 Invalidate CloudFront Cache
       run: |
@@ -76,6 +75,6 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: 'us-east-1'
-        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        S3_BUCKET: ${{ secrets.S3_BUCKET }}
         CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
