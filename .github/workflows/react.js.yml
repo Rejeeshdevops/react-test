@@ -25,6 +25,12 @@ jobs:
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-
+   
+    # ✅ NEW: Clean old build files before installing dependencies
+    - name: 🧹 Clean Old Build Files
+      run: |
+        echo "Cleaning old build files..."
+        rm -rf node_modules dist .vite .parcel-cache .next      
           
     - name: 📦 Install Dependencies
       run: pnpm install --frozen-lockfile
