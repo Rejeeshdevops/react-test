@@ -64,6 +64,7 @@ jobs:
       
     - name: 🔄 Invalidate CloudFront Cache
       run: |
+        set -e
         if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
           echo "Error: CLOUDFRONT_DISTRIBUTION_ID secret is not set."
           exit 1
