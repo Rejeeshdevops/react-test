@@ -56,7 +56,7 @@ jobs:
         
     - name: 🚀 Deploy to S3
       run: |
-        if [ -z "${{ secrets.S3_BUCKET }}" ]; then
+    #    if [ -z "${{ secrets.S3_BUCKET }}" ]; then
           echo "Error: S3_BUCKET secret is not set."
           exit 1
         fi
