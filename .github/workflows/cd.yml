@@ -1,0 +1,51 @@
+name: CD - Deploy React App to S3
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Test React App"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 🚀 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 📂 Verify Build Output
+      run: |
+        echo "Checking build directory..."
+        ls -al ./dist || (echo "Build directory is missing!" && exit 1)
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: 🚀 Deploy to S3
+      run: |
+        set -e
+        if [ -z "${{ secrets.S3_BUCKET }}" ]; then
+          echo "Error: S3_BUCKET secret is not set."
+          exit 1
+        fi
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --cache-control "no-cache, no-store, must-revalidate"
+
+    - name: 🔄 Invalidate CloudFront Cache
+      run: |
+        set -e
+        if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          echo "Error: CLOUDFRONT_DISTRIBUTION_ID secret is not set."
+          exit 1
+        fi
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+    - name: 🐛 Debug Environment Variables (Non-sensitive)
+      run: |
+        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
+        echo "S3_BUCKET: ${{ secrets.S3_BUCKET }}"
+        echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
