@@ -1,31 +1,47 @@
 name: CD - Deploy React App to S3
-
 on:
   workflow_run:
     workflows: ["CI - Build and Test React App"]
     types:
       - completed
+    branches:
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
-
+    
+    # Rebuild the app in the CD workflow
+    - name: 🔧 Use Node.js LTS
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: 📦 Install PNPM
+      run: npm install -g pnpm
+        
+    - name: 📦 Install Dependencies
+      run: pnpm install --frozen-lockfile
+        
+    - name: 🎯 Build React App
+      run: pnpm run build
+      
     - name: 📂 Verify Build Output
       run: |
         echo "Checking build directory..."
         ls -al ./dist || (echo "Build directory is missing!" && exit 1)
-
+        
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-
+        
     - name: 🚀 Deploy to S3
       run: |
         set -e
@@ -34,7 +50,7 @@ jobs:
           exit 1
         fi
         aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --cache-control "no-cache, no-store, must-revalidate"
-
+        
     - name: 🔄 Invalidate CloudFront Cache
       run: |
         set -e
@@ -43,9 +59,3 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
-    - name: 🐛 Debug Environment Variables (Non-sensitive)
-      run: |
-        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
-        echo "S3_BUCKET: ${{ secrets.S3_BUCKET }}"
-        echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
