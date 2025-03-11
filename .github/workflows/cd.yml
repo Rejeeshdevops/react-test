@@ -1,32 +1,58 @@
 name: CD - Deploy React App to S3
-
 on:
   workflow_run:
     workflows: ["CI - Build and Test React App"]
     types:
       - completed
+    branches:
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
-
+      
+    # Download the artifacts from the CI workflow with more debugging
+    - name: 📥 Download Build Artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: "CI - Build and Test React App"
+        workflow_conclusion: success
+        name: build-artifacts
+        path: dist
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 📂 Debug Directory Structure
+      run: |
+        echo "Current directory content:"
+        ls -la
+        echo "Dist directory content (if exists):"
+        ls -la dist || echo "Dist directory does not exist"
+        
     - name: 📂 Verify Build Output
       run: |
         echo "Checking build directory..."
-        ls -al ./dist || (echo "Build directory is missing!" && exit 1)
-
+        if [ -d "./dist" ]; then
+          ls -al ./dist
+          echo "Build directory exists and contains the files above"
+        else
+          echo "Build directory is missing!"
+          exit 1
+        fi
+        
     - name: Configure AWS Credentials
+      if: success()
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-
+        
     - name: 🚀 Deploy to S3
+      if: success()
       run: |
         set -e
         if [ -z "${{ secrets.S3_BUCKET }}" ]; then
@@ -34,8 +60,9 @@ jobs:
           exit 1
         fi
         aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --cache-control "no-cache, no-store, must-revalidate"
-
+        
     - name: 🔄 Invalidate CloudFront Cache
+      if: success()
       run: |
         set -e
         if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
@@ -43,9 +70,3 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
-    - name: 🐛 Debug Environment Variables (Non-sensitive)
-      run: |
-        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
-        echo "S3_BUCKET: ${{ secrets.S3_BUCKET }}"
-        echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
