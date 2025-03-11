@@ -1,0 +1,87 @@
+name: CD - Deploy React App to S3
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI - Build and Test React App"]
+    types:
+      - completed
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+    - name: 🚀 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 📥 Download Build Artifact
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: context.payload.workflow_run ? context.payload.workflow_run.id : (await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci-build-and-test.yml',
+              branch: 'master',
+              status: 'success',
+              per_page: 1
+            })).data.workflow_runs[0].id
+          });
+          
+          const matchArtifact = artifacts.data.artifacts.find(artifact => {
+            return artifact.name === "build-artifact"
+          });
+          
+          if (!matchArtifact) {
+            core.setFailed('No build artifact found');
+            return;
+          }
+          
+          const download = await github.rest.actions.downloadArtifact({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            artifact_id: matchArtifact.id,
+            archive_format: 'zip'
+          });
+          
+          const fs = require('fs');
+          fs.writeFileSync('build-artifact.zip', Buffer.from(download.data));
+          
+    - name: 📂 Extract Build Files
+      run: |
+        mkdir -p extract_dir
+        unzip build-artifact.zip -d extract_dir
+        tar -xzf extract_dir/build.tar.gz
+        
+    - name: 📂 Verify Build Output
+      run: |
+        echo "Checking build directory..."
+        ls -al ./dist || (echo "Build directory is missing!" && exit 1)
+        
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        
+    - name: 🚀 Deploy to S3
+      run: |
+        if [ -z "${{ secrets.S3_BUCKET }}" ]; then
+          echo "Error: S3_BUCKET secret is not set."
+          exit 1
+        fi
+        aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }} --exact-timestamps --delete --cache-control "no-cache, no-store, must-revalidate"
+        
+    - name: 🔄 Invalidate CloudFront Cache
+      run: |
+        if [ -z "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          echo "Error: CLOUDFRONT_DISTRIBUTION_ID secret is not set."
+          exit 1
+        fi
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
