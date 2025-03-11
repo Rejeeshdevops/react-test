@@ -14,6 +14,12 @@ jobs:
     - name: 🚀 Checkout Code
       uses: actions/checkout@v4
 
+    - name: 📂 Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: react-build
+        path: ./dist
+
     - name: 📂 Verify Build Output
       run: |
         echo "Checking build directory..."
@@ -43,9 +49,3 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
-    - name: 🐛 Debug Environment Variables (Non-sensitive)
-      run: |
-        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
-        echo "S3_BUCKET: ${{ secrets.S3_BUCKET }}"
-        echo "CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
