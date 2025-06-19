@@ -57,3 +57,13 @@ jobs:
         name: build-artifact
         path: build.tar.gz
         retention-days: 1
+
+    - name: 🔔 Notify Build Result
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Build succeeded!"
+        else
+          echo "❌ Build failed!"
+        fi
+ 
