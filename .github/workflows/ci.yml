@@ -68,6 +68,6 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: "${{ job.status == 'success' && '✅ Build Succeeded' || '❌ Build Failed' }} - ${{ github.repository }}"
         body: "Build ${{ job.status }} for commit ${{ github.sha }} on branch ${{ github.ref }}"
-        to: rejeeshkv@techversantinfotech.com
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
         from: ${{ secrets.EMAIL_USERNAME }}
  
