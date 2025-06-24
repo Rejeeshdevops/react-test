@@ -68,6 +68,20 @@ jobs:
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: "${{ job.status == 'success' && '✅ Build Succeeded' || '❌ Build Failed' }} - ${{ github.repository }}"
         body: "Build ${{ job.status }} for commit ${{ github.sha }} on branch ${{ github.ref }}"
+        📋 Build Details:
+          • Repository: ${{ github.repository }}
+          • Branch: ${{ github.ref_name }}
+          • Commit: ${{ github.sha }}
+          • Workflow: ${{ github.workflow }}
+          • Node Version: ${{ matrix.node-version }}
+          • Changed Modules: ${{ env.CHANGED_MODULES }}
+          • Build ID: ${{ github.run_id }}
+          • Timestamp: ${{ github.event.head_commit.timestamp }}
+          
+          🔗 View build logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+           The build artifacts have been created and are ready for deployment.
         to: ${{ secrets.NOTIFICATION_EMAIL }}
         from: ${{ secrets.EMAIL_USERNAME }}
+        
  
