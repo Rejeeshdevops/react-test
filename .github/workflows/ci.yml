@@ -58,12 +58,16 @@ jobs:
         path: build.tar.gz
         retention-days: 1
 
-    - name: 🔔 Notify Build Result
-      if: always()
-      run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Build succeeded!"
-        else
-          echo "❌ Build failed!"
-        fi
+    - name: 📧 Send Email Notification
+      if: always()  # ← This sends email regardless of result
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "${{ job.status == 'success' && '✅ Build Succeeded' || '❌ Build Failed' }} - ${{ github.repository }}"
+        body: "Build ${{ job.status }} for commit ${{ github.sha }} on branch ${{ github.ref }}"
+        to: rejeeshkv@techversantinfotech.com
+        from: ${{ secrets.EMAIL_USERNAME }}
  
