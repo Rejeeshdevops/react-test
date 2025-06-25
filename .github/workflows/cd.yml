@@ -93,25 +93,27 @@ jobs:
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "${{ job.status == 'success' && '✅ Deployment Successful' || '❌ Deployment Failed' }} - ${{ github.repository }}"
-        body: |
-          ${{ job.status == 'success' && '🎉 Deployment completed successfully!' || '🚨 Deployment failed!' }}
+       server_address: smtp.gmail.com
+       server_port: 587
+       secure: true  # Enable TLS
+       username: ${{ secrets.EMAIL_USERNAME }}
+       password: ${{ secrets.EMAIL_PASSWORD }}
+       subject: "${{ job.status == 'success' && '✅ Deployment Successful' || '❌ Deployment Failed' }} - ${{ github.repository }}"
+       to: ${{ secrets.NOTIFICATION_EMAIL }}
+       from: ${{ secrets.EMAIL_USERNAME }}
+       content_type: text/plain
+       body: |
+        ${{ job.status == 'success' && '🎉 Deployment completed successfully!' || '🚨 Deployment failed!' }}
       
-          📋 Details:
-          • Repository: ${{ github.repository }}
-          • Branch: ${{ github.ref_name }}
-          • Commit: ${{ github.sha }}
-          • Workflow: ${{ github.workflow }}
-          • Run ID: ${{ github.run_id }}
-          • Timestamp: ${{ github.event.head_commit.timestamp }}
+        📋 Details:
+        • Repository: ${{ github.repository }}
+        • Branch: ${{ github.ref_name }}
+        • Commit: ${{ github.sha }}
+        • Workflow: ${{ github.workflow }}
+        • Run ID: ${{ github.run_id }}
+        • Timestamp: ${{ github.event.head_commit.timestamp }}
       
-           🔗 View logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-          ${{ job.status == 'success' && 'Your React app has been deployed to S3 and CloudFront cache has been invalidated.' || 'Please check the workflow logs for more details.' }}
-          to: ${{ secrets.NOTIFICATION_EMAIL }}
-          from: ${{ secrets.EMAIL_USERNAME }}
+        🔗 View logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      
+        ${{ job.status == 'success' && 'Your React app has been deployed to S3 and CloudFront cache has been invalidated.' || 'Please check the workflow logs for more details.' }}
 
