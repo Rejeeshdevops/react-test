@@ -89,18 +89,18 @@ jobs:
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
 
         # ===== EMAIL NOTIFICATIONS =====
-    - name: 📧 Send Deployment Success Email
-      if: success()
+    - name: 📧 Send Deployment Result Email
+      if: always()
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 587
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "✅ Deployment Successful - ${{ github.repository }}"
+        subject: "${{ job.status == 'success' && '✅ Deployment Successful' || '❌ Deployment Failed' }} - ${{ github.repository }}"
         body: |
-          🎉 Deployment completed successfully!
-          
+          ${{ job.status == 'success' && '🎉 Deployment completed successfully!' || '🚨 Deployment failed!' }}
+      
           📋 Details:
           • Repository: ${{ github.repository }}
           • Branch: ${{ github.ref_name }}
@@ -108,35 +108,10 @@ jobs:
           • Workflow: ${{ github.workflow }}
           • Run ID: ${{ github.run_id }}
           • Timestamp: ${{ github.event.head_commit.timestamp }}
-          
-          🔗 View deployment: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          Your React app has been deployed to S3 and CloudFront cache has been invalidated.
-        to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: ${{ secrets.EMAIL_USERNAME }}
+      
+           🔗 View logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-    - name: 📧 Send Deployment Failure Email
-      if: failure()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "❌ Deployment Failed - ${{ github.repository }}"
-        body: |
-          🚨 Deployment failed!
-          
-          📋 Details:
-          • Repository: ${{ github.repository }}
-          • Branch: ${{ github.ref_name }}
-          • Commit: ${{ github.sha }}
-          • Workflow: ${{ github.workflow }}
-          • Run ID: ${{ github.run_id }}
-          • Timestamp: ${{ github.event.head_commit.timestamp }}
-          
-          🔗 View logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          Please check the workflow logs for more details.
-        to: ${{ secrets.NOTIFICATION_EMAIL }}
-        from: ${{ secrets.EMAIL_USERNAME }}
+          ${{ job.status == 'success' && 'Your React app has been deployed to S3 and CloudFront cache has been invalidated.' || 'Please check the workflow logs for more details.' }}
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+
