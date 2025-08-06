@@ -1,4 +1,4 @@
-name: CD - Deploy React App to 
+name: CD - Deploy React App to S
 on:
   workflow_dispatch:
   workflow_run:
@@ -87,7 +87,6 @@ jobs:
           exit 1
         fi
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
         # ===== EMAIL NOTIFICATIONS =====
       # ===== EMAIL NOTIFICATIONS =====
     - name: 📧 Send Deployment Success Email
