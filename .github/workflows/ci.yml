@@ -1,4 +1,4 @@
-name: CI - Build and Test React App
+name: CI - Build and Test React Ap
 on:
   push:
     branches:
