@@ -1,4 +1,4 @@
-name: CD - Deploy React App to S
+name: CD - Deploy React App to 
 on:
   workflow_dispatch:
   workflow_run:
