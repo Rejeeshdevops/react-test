@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - master  # Change branch if needed
-  pull_request:
-    branches:
-      - master  # Change branch if needed
 
 jobs:
   build-test:
